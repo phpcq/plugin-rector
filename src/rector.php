@@ -72,11 +72,16 @@ PHP;
         PluginConfigurationInterface $config,
         EnvironmentInterface $environment
     ): iterable {
-        yield $environment->getTaskFactory()
+        $factory = $environment->getTaskFactory()
             ->buildRunProcess($this->getName(), $this->buildArguments($config, $environment))
             ->withWorkingDirectory($environment->getProjectConfiguration()->getProjectRootPath())
-            ->withOutputTransformer($this->createOutputTransformerFactory($config->getBool('dry-run')))
-            ->build();
+            ->withOutputTransformer($this->createOutputTransformerFactory($config->getBool('dry-run')));
+
+        if (! $config->getBool('dry-run')) {
+            $factory->forceSingleProcess();
+        }
+
+        return $factory->build();
     }
 
     /** @return list<string> */
