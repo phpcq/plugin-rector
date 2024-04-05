@@ -1,0 +1,24 @@
+{
+  "plugins": {
+    "rector": [
+      {
+        "api-version": "1.0.0",
+        "version": "1.0.0",
+        "type": "php-file",
+        "url": "src/rector.php",
+        "requirements": {
+          "php": {
+            "php": "^8.1"
+          },
+          "composer": {
+            "rector/rector": "^1.0"
+          }
+        },
+        "checksum": {
+          "type": "sha-512",
+          "value": "45217daaab3b20128b8f2a82782fad47533dcd9ef62d6d3db6c7891dc076682e6657528b1ff18828893ee3aa3b4aeeb7c36dbd3550b2e07580c094da1d261751"
+        }
+      }
+    ]
+  }
+}

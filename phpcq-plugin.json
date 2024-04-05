@@ -1,0 +1,14 @@
+{
+  "name": "rector",
+  "type": "php-file",
+  "url": "src/rector.php",
+  "api-version": "1.0.0",
+  "requirements": {
+    "php": {
+      "php": "^8.1"
+    },
+    "composer": {
+      "rector/rector": "^1.0"
+    }
+  }
+}
