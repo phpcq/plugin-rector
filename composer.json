@@ -24,8 +24,7 @@
   },
   "require-dev": {
     "phpcq/runner-bootstrap": "^1.0@dev",
-    "phpcq/schema": "^1.0",
-    "rector/rector": "^1.0"
+    "phpcq/schema": "^1.0"
   },
   "autoload-dev": {
     "psr-4": {
