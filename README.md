@@ -9,13 +9,14 @@ Extend your `.phpcq.yaml.dist` configuration by adding the plugin and configurin
 ```yaml
 phpcq:
   plugins:
-    version: ^1.0
-    signed: false
+    rector:
+      version: ^1.0
+      signed: false
 
 tasks:
   rector:
     config:
-      # Set to 
+      # Set to false will enable automatic refactoring
       dry-run: false 
       # Custom config file, defaults to rector.php
       config: custom-rector.php
