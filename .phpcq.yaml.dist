@@ -57,8 +57,9 @@ phpcq:
 
 tasks:
   fix:
-    - composer-normalize
+    - composer-normalize-fix
     - phpcbf
+    - rector-fix
   verify:
     - composer-require-checker
     - composer-normalize
@@ -69,6 +70,7 @@ tasks:
     - phpcs
     - psalm
     - phpunit
+    - rector
   default:
     - verify
     - analyze
@@ -99,3 +101,13 @@ tasks:
 
   phpcpd:
     config:
+
+  composer-normalize-fix:
+    plugin: composer-normalize
+    config:
+      dry_run: false
+
+  rector-fix:
+    plugin: rector
+    config:
+      dry-run: false
