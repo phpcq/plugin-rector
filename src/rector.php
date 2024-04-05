@@ -195,7 +195,8 @@ PHP;
                         }
 
                         // No error or changes detected
-                        if (!isset($data['totals'])
+                        if (
+                            !isset($data['totals'])
                             || $data['totals']['changed_files'] === 0 && $data['totals']['errors'] === 0
                         ) {
                             return;
