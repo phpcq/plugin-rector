@@ -4,14 +4,17 @@ declare(strict_types=1);
 
 use Phpcq\PluginApi\Version10\Configuration\PluginConfigurationBuilderInterface;
 use Phpcq\PluginApi\Version10\Configuration\PluginConfigurationInterface;
+use Phpcq\PluginApi\Version10\Definition\ExecTaskDefinitionBuilderInterface;
 use Phpcq\PluginApi\Version10\DiagnosticsPluginInterface;
 use Phpcq\PluginApi\Version10\EnvironmentInterface;
+use Phpcq\PluginApi\Version10\ExecPluginInterface;
 use Phpcq\PluginApi\Version10\Output\OutputTransformerFactoryInterface;
 use Phpcq\PluginApi\Version10\Output\OutputTransformerInterface;
 use Phpcq\PluginApi\Version10\Report\TaskReportInterface;
+use Phpcq\PluginApi\Version10\Task\TaskInterface;
 use Phpcq\PluginApi\Version10\Util\BufferedLineReader;
 
-return new class implements DiagnosticsPluginInterface
+return new class implements DiagnosticsPluginInterface, ExecPluginInterface
 {
     private const RECTOR_FILE_TEMPLATE = <<<'PHP'
 <?php
@@ -81,7 +84,28 @@ PHP;
             $factory->forceSingleProcess();
         }
 
-        return $factory->build();
+        yield $factory->build();
+    }
+
+    public function describeExecTask(
+        ExecTaskDefinitionBuilderInterface $definitionBuilder,
+        EnvironmentInterface $environment
+    ): void {
+        $definitionBuilder->describeApplication('Upgrades or refactors source code with provided rectors');
+    }
+
+    /** {@inheritDoc} */
+    public function createExecTask(
+        string|null $application,
+        array $arguments,
+        EnvironmentInterface $environment
+    ): TaskInterface {
+        array_unshift($arguments, $environment->getInstalledDir() . '/vendor/bin/rector');
+
+        return $environment->getTaskFactory()
+            ->buildRunProcess('rector', $arguments)
+            ->forceSingleProcess()
+            ->build();
     }
 
     /** @return list<string> */
