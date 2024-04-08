@@ -207,14 +207,14 @@ PHP;
         );
         $task        = $this->buildRunTask($environment, ['--help']);
         if ($task instanceof OutputWritingTaskInterface) {
-            $output = $this->createOutputHandler();
+            $output = $this->createOutputToStringHandler();
             $task->runForOutput($output);
             $parser->parse((string) $output, $application);
         }
 
         $task = $this->buildRunTask($environment, ['list']);
         if ($task instanceof OutputWritingTaskInterface) {
-            $output = $this->createOutputHandler();
+            $output = $this->createOutputToStringHandler();
             $task->runForOutput($output);
             $parser->parseCommands((string) $output, $application);
         }
@@ -395,7 +395,7 @@ PHP;
     }
 
     /** @return Stringable&OutputInterface */
-    private function createOutputHandler(): Stringable|OutputInterface
+    private function createOutputToStringHandler(): Stringable|OutputInterface
     {
         return new class implements OutputInterface {
             private string $output = '';
