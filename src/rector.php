@@ -4,13 +4,17 @@ declare(strict_types=1);
 
 use Phpcq\PluginApi\Version10\Configuration\PluginConfigurationBuilderInterface;
 use Phpcq\PluginApi\Version10\Configuration\PluginConfigurationInterface;
+use Phpcq\PluginApi\Version10\Definition\Builder\ConsoleApplicationBuilderInterface;
+use Phpcq\PluginApi\Version10\Definition\Builder\ConsoleCommandBuilderInterface;
 use Phpcq\PluginApi\Version10\Definition\ExecTaskDefinitionBuilderInterface;
 use Phpcq\PluginApi\Version10\DiagnosticsPluginInterface;
 use Phpcq\PluginApi\Version10\EnvironmentInterface;
 use Phpcq\PluginApi\Version10\ExecPluginInterface;
+use Phpcq\PluginApi\Version10\Output\OutputInterface;
 use Phpcq\PluginApi\Version10\Output\OutputTransformerFactoryInterface;
 use Phpcq\PluginApi\Version10\Output\OutputTransformerInterface;
 use Phpcq\PluginApi\Version10\Report\TaskReportInterface;
+use Phpcq\PluginApi\Version10\Task\OutputWritingTaskInterface;
 use Phpcq\PluginApi\Version10\Task\TaskInterface;
 use Phpcq\PluginApi\Version10\Util\BufferedLineReader;
 
@@ -73,7 +77,7 @@ PHP;
 
     public function createDiagnosticTasks(
         PluginConfigurationInterface $config,
-        EnvironmentInterface $environment
+        EnvironmentInterface $environment,
     ): iterable {
         $factory = $environment->getTaskFactory()
             ->buildRunProcess($this->getName(), $this->buildArguments($config, $environment))
@@ -89,17 +93,145 @@ PHP;
 
     public function describeExecTask(
         ExecTaskDefinitionBuilderInterface $definitionBuilder,
-        EnvironmentInterface $environment
+        EnvironmentInterface $environment,
     ): void {
-        $definitionBuilder->describeApplication('Upgrades or refactors source code with provided rectors');
+        $parser = new class {
+            public function parse(
+                string $output,
+                ConsoleApplicationBuilderInterface|ConsoleCommandBuilderInterface $builder,
+            ): void {
+                $this->parseOutput(
+                    $output,
+                    function (string $currentSection, string $line) use ($builder): void {
+                        match ($currentSection) {
+                            'options' => $this->parseOption($line, $builder),
+                            'arguments' => $this->parseArgument($line, $builder),
+                            default => null,
+                        };
+                    }
+                );
+            }
+
+            public function parseCommands(
+                string $output,
+                ConsoleApplicationBuilderInterface|ConsoleCommandBuilderInterface $builder,
+            ): void {
+                $this->parseOutput(
+                    $output,
+                    function (string $currentSection, string $line) use ($builder): void {
+                        if ($currentSection !== 'available commands') {
+                            return;
+                        }
+
+                        $this->parseCommand($line, $builder);
+                    }
+                );
+            }
+
+            private function parseOutput(string $output, callable $lineParser): void
+            {
+                $lines          = explode("\n", $output);
+                $currentSection = '';
+
+                foreach ($lines as $line) {
+                    $line = trim($line);
+                    if ($line === '') {
+                        continue;
+                    }
+
+                    // Check for section headers
+                    if (str_ends_with($line, ':')) {
+                        $currentSection = strtolower(trim(substr($line, 0, -1)));
+                        continue;
+                    }
+
+                    $lineParser($currentSection, $line);
+                }
+            }
+
+            private function parseOption(
+                string $line,
+                ConsoleApplicationBuilderInterface|ConsoleCommandBuilderInterface $builder,
+            ): void {
+                if (
+                    preg_match(
+                        '#(-([^,]+), )?--([\w-]+)(\|--([\w-]+))?(=([A-Z-]+))?\s*(.*)#',
+                        $line,
+                        $matches
+                    ) === false
+                ) {
+                    return;
+                }
+
+                foreach (array_filter([$matches[3], $matches[5]]) as $name) {
+                    $option = $builder->describeOption($name, $matches[8]);
+                    if ($matches[7]) {
+                        $option->withOptionalValue($matches[7]);
+                    }
+
+                    if ($matches[2]) {
+                        $option->withShortcut($matches[2]);
+                    }
+                }
+            }
+
+            private function parseArgument(
+                string $line,
+                ConsoleApplicationBuilderInterface|ConsoleCommandBuilderInterface $builder,
+            ): void {
+                if (preg_match('/([\w-]+)\s*(.*)/', $line, $matches) === false) {
+                    return;
+                }
+
+                $builder->describeArgument($matches[1], $matches[2]);
+            }
+
+            private function parseCommand(
+                string $line,
+                ConsoleApplicationBuilderInterface|ConsoleCommandBuilderInterface $builder,
+            ): void {
+                if (! $builder instanceof ConsoleApplicationBuilderInterface) {
+                    return;
+                }
+
+                if (preg_match('/([\w-]+)\s*(.*)/', $line, $matches) === false) {
+                    return;
+                }
+
+                $builder->describeCommand($matches[1], $matches[2]);
+            }
+        };
+
+        $application = $definitionBuilder->describeApplication(
+            'Upgrades or refactors source code with provided rectors',
+        );
+        $task        = $this->buildRunTask($environment, ['--help']);
+        if ($task instanceof OutputWritingTaskInterface) {
+            $output = $this->createOutputHandler();
+            $task->runForOutput($output);
+            $parser->parse((string) $output, $application);
+        }
+
+        $task = $this->buildRunTask($environment, ['list']);
+        if ($task instanceof OutputWritingTaskInterface) {
+            $output = $this->createOutputHandler();
+            $task->runForOutput($output);
+            $parser->parseCommands((string) $output, $application);
+        }
     }
 
     /** {@inheritDoc} */
     public function createExecTask(
         string|null $application,
         array $arguments,
-        EnvironmentInterface $environment
+        EnvironmentInterface $environment,
     ): TaskInterface {
+        return $this->buildRunTask($environment, $arguments);
+    }
+
+    /** @param list<string> $arguments */
+    private function buildRunTask(EnvironmentInterface $environment, array $arguments): TaskInterface
+    {
         array_unshift($arguments, $environment->getInstalledDir() . '/vendor/bin/rector');
 
         return $environment->getTaskFactory()
@@ -126,7 +258,7 @@ PHP;
 
     private function createTemporaryRectorPhpFile(
         EnvironmentInterface $environment,
-        PluginConfigurationInterface $config
+        PluginConfigurationInterface $config,
     ): string {
         $projectRoot  = $environment->getProjectConfiguration()->getProjectRootPath();
         $rectorPhp    = $environment->getUniqueTempFile($this, 'rector.php');
@@ -258,6 +390,39 @@ PHP;
                         }
                     }
                 };
+            }
+        };
+    }
+
+    /** @return Stringable&OutputInterface */
+    private function createOutputHandler(): Stringable|OutputInterface
+    {
+        return new class implements OutputInterface {
+            private string $output = '';
+
+            public function write(
+                string $message,
+                int $verbosity = self::VERBOSITY_NORMAL,
+                int $channel = self::CHANNEL_STDOUT,
+            ): void {
+                if ($channel === self::CHANNEL_STDOUT) {
+                    $this->output .= $message;
+                }
+            }
+
+            public function writeln(
+                string $message,
+                int $verbosity = self::VERBOSITY_NORMAL,
+                int $channel = self::CHANNEL_STDOUT,
+            ): void {
+                if ($channel === self::CHANNEL_STDOUT) {
+                    $this->output .= $message . "\n";
+                }
+            }
+
+            public function __toString(): string
+            {
+                return $this->output;
             }
         };
     }

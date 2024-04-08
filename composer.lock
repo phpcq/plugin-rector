@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "ef5f38b05ee740706940ded05344cd6e",
+    "content-hash": "0da54c451fee22a9fea945f30dad49cf",
     "packages": [
         {
             "name": "phpcq/plugin-api",
@@ -202,7 +202,8 @@
     "prefer-lowest": false,
     "platform": {
         "php": "^8.1",
-        "ext-json": "*"
+        "ext-json": "*",
+        "ext-pcre": "*"
     },
     "platform-dev": [],
     "plugin-api-version": "2.6.0"
