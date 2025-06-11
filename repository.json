@@ -3,7 +3,7 @@
     "rector": [
       {
         "api-version": "1.0.0",
-        "version": "1.0.0",
+        "version": "1.0.1",
         "type": "php-file",
         "url": "src/rector.php",
         "requirements": {
@@ -13,12 +13,12 @@
             "ext-pcre": "*"
           },
           "composer": {
-            "rector/rector": "^1.0"
+            "rector/rector": "^1.0 || ^2.0"
           }
         },
         "checksum": {
           "type": "sha-512",
-          "value": "c387c8001855475f410a816b5d361631ba4eba5a369323e7d3114f8d0ddbbf5b10e549c22d04ee2981729268816430ab6eaeb862d747881a8c279faddc346239"
+          "value": "05ae79d94caa01dc604180e92ca3c03e92846e8fe009b311248c35f18644790ea898653dd1811137ee3ecd92f38836d63633e36b8ba6390a08d25e265f168a16"
         }
       }
     ]

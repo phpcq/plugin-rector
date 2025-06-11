@@ -20,6 +20,7 @@ use Phpcq\PluginApi\Version10\Util\BufferedLineReader;
 
 return new class implements DiagnosticsPluginInterface, ExecPluginInterface
 {
+    /** @psalm-suppress MissingClassConstType */
     private const RECTOR_FILE_TEMPLATE = <<<'PHP'
 <?php
 
@@ -54,11 +55,13 @@ return (function(
 })(%s, %s, %s, %s);
 PHP;
 
+    #[Override]
     public function getName(): string
     {
         return 'rector';
     }
 
+    #[Override]
     public function describeConfiguration(PluginConfigurationBuilderInterface $configOptionsBuilder): void
     {
         $configOptionsBuilder
@@ -75,6 +78,7 @@ PHP;
             ->isRequired();
     }
 
+    #[Override]
     public function createDiagnosticTasks(
         PluginConfigurationInterface $config,
         EnvironmentInterface $environment,
@@ -91,6 +95,7 @@ PHP;
         yield $factory->build();
     }
 
+    #[Override]
     public function describeExecTask(
         ExecTaskDefinitionBuilderInterface $definitionBuilder,
         EnvironmentInterface $environment,
@@ -165,11 +170,11 @@ PHP;
 
                 foreach (array_filter([$matches[3], $matches[5]]) as $name) {
                     $option = $builder->describeOption($name, $matches[8]);
-                    if ($matches[7]) {
+                    if ($matches[7] !== '' && $matches[7] !== '0') {
                         $option->withOptionalValue($matches[7]);
                     }
 
-                    if ($matches[2]) {
+                    if ($matches[2] !== '' && $matches[2] !== '0') {
                         $option->withShortcut($matches[2]);
                     }
                 }
@@ -221,6 +226,7 @@ PHP;
     }
 
     /** {@inheritDoc} */
+    #[Override]
     public function createExecTask(
         string|null $application,
         array $arguments,
@@ -282,6 +288,7 @@ PHP;
             {
             }
 
+            #[Override]
             public function createFor(TaskReportInterface $report): OutputTransformerInterface
             {
                 /**
@@ -317,11 +324,13 @@ PHP;
                         $this->data = BufferedLineReader::create();
                     }
 
+                    #[Override]
                     public function write(string $data, int $channel): void
                     {
                         $this->data->push($data);
                     }
 
+                    #[Override]
                     public function finish(int $exitCode): void
                     {
                         $this->process();
@@ -400,6 +409,7 @@ PHP;
         return new class implements OutputInterface {
             private string $output = '';
 
+            #[Override]
             public function write(
                 string $message,
                 int $verbosity = self::VERBOSITY_NORMAL,
@@ -410,6 +420,7 @@ PHP;
                 }
             }
 
+            #[Override]
             public function writeln(
                 string $message,
                 int $verbosity = self::VERBOSITY_NORMAL,
