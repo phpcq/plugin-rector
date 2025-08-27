@@ -33,7 +33,7 @@ jobs:
           php-version: ${{ matrix.php }}
 
       - name: Cache composer cache directory
-        uses: actions/cache@v1
+        uses: actions/cache@v4
         env:
           cache-name: composer-cache-dir-${{ matrix.php }}
         with:
@@ -41,7 +41,7 @@ jobs:
           key: ${{ runner.os }}-build-${{ env.cache-name }}
 
       - name: Cache phpcq directory
-        uses: actions/cache@v1
+        uses: actions/cache@v4
         env:
           cache-name: phpcq-${{ matrix.php }}
         with:
@@ -51,7 +51,7 @@ jobs:
             ${{ runner.os }}-build-${{ env.cache-name }}-
 
       - name: Cache vendor directory
-        uses: actions/cache@v1
+        uses: actions/cache@v4
         env:
           cache-name: vendor-${{ matrix.php }}
         with:
